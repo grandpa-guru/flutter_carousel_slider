@@ -1,276 +1,263 @@
-library carousel_slider;
-
+import 'dart:math';
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class CarouselSlider extends StatefulWidget {
-  CarouselSlider(
-      {@required this.items,
-      this.height,
-      this.aspectRatio: 16 / 9,
-      this.viewportFraction: 0.8,
-      this.initialPage: 0,
-      int realPage: 10000,
-      this.enableInfiniteScroll: true,
-      this.reverse: false,
-      this.autoPlay: false,
-      this.autoPlayInterval: const Duration(seconds: 4),
-      this.autoPlayAnimationDuration = const Duration(milliseconds: 800),
-      this.autoPlayCurve: Curves.fastOutSlowIn,
-      this.pauseAutoPlayOnTouch,
-      this.enlargeCenterPage = false,
-      this.onPageChanged,
-      this.scrollDirection: Axis.horizontal})
-      : this.realPage = enableInfiniteScroll ? realPage + initialPage : initialPage,
-        this.pageController = PageController(
-          viewportFraction: viewportFraction,
-          initialPage: enableInfiniteScroll ? realPage + initialPage : initialPage,
-        );
+class Carousel extends StatefulWidget {
+  final List images;
 
-  /// The widgets to be shown in the carousel.
-  final List<Widget> items;
+  final Curve animationCurve;
 
-  /// Set carousel height and overrides any existing [aspectRatio].
-  final double height;
+  final Duration animationDuration;
 
-  /// Aspect ratio is used if no height have been declared.
-  ///
-  /// Defaults to 16:9 aspect ratio.
-  final double aspectRatio;
+  final double dotSize;
 
-  /// The fraction of the viewport that each page should occupy.
-  ///
-  /// Defaults to 0.8, which means each page fills 80% of the carousel.
-  final num viewportFraction;
+  final double dotIncreaseSize;
 
-  /// The initial page to show when first creating the [CarouselSlider].
-  ///
-  /// Defaults to 0.
-  final num initialPage;
+  final double dotSpacing;
 
-  /// The actual index of the [PageView].
-  ///
-  /// This value can be ignored unless you know the carousel will be scrolled
-  /// backwards more then 10000 pages.
-  /// Defaults to 10000 to simulate infinite backwards scrolling.
-  final num realPage;
+  final Color dotColor;
 
-  ///Determines if carousel should loop infinitely or be limited to item length.
-  ///
-  ///Defaults to true, i.e. infinite loop.
-  final bool enableInfiniteScroll;
+  final Color dotBgColor;
 
-  /// Reverse the order of items if set to true.
-  ///
-  /// Defaults to false.
-  final bool reverse;
+  final bool showIndicator;
 
-  /// Enables auto play, sliding one page at a time.
-  ///
-  /// Use [autoPlayInterval] to determent the frequency of slides.
-  /// Defaults to false.
-  final bool autoPlay;
+  final double indicatorBgPadding;
 
-  /// Sets Duration to determent the frequency of slides when
-  ///
-  /// [autoPlay] is set to true.
-  /// Defaults to 4 seconds.
-  final Duration autoPlayInterval;
+  final BoxFit boxFit;
 
-  /// The animation duration between two transitioning pages while in auto playback.
-  ///
-  /// Defaults to 800 ms.
-  final Duration autoPlayAnimationDuration;
+  final bool borderRadius;
 
-  /// Determines the animation curve physics.
-  ///
-  /// Defaults to [Curves.fastOutSlowIn].
-  final Curve autoPlayCurve;
+  final Radius radius;
 
-  /// Sets a timer on touch detected that pause the auto play with
-  /// the given [Duration].
-  ///
-  /// Touch Detection is only active if [autoPlay] is true.
-  final Duration pauseAutoPlayOnTouch;
+  final double moveIndicatorFromBottom;
 
-  /// Determines if current page should be larger then the side images,
-  /// creating a feeling of depth in the carousel.
-  ///
-  /// Defaults to false.
-  final bool enlargeCenterPage;
+  final bool noRadiusForIndicator;
 
-  /// The axis along which the page view scrolls.
-  ///
-  /// Defaults to [Axis.horizontal].
-  final Axis scrollDirection;
+  final bool overlayShadow;
 
-  /// Called whenever the page in the center of the viewport changes.
-  final Function(int index) onPageChanged;
+  final Color overlayShadowColors;
 
-  /// [pageController] is created using the properties passed to the constructor
-  /// and can be used to control the [PageView] it is passed to.
-  final PageController pageController;
+  final double overlayShadowSize;
 
-  /// Animates the controlled [CarouselSlider] to the next page.
-  ///
-  /// The animation lasts for the given duration and follows the given curve.
-  /// The returned [Future] resolves when the animation completes.
-  Future<void> nextPage({Duration duration, Curve curve}) {
-    return pageController.nextPage(duration: duration, curve: curve);
-  }
+  final bool autoplay;
 
-  /// Animates the controlled [CarouselSlider] to the previous page.
-  ///
-  /// The animation lasts for the given duration and follows the given curve.
-  /// The returned [Future] resolves when the animation completes.
-  Future<void> previousPage({Duration duration, Curve curve}) {
-    return pageController.previousPage(duration: duration, curve: curve);
-  }
+  final Duration autoplayDuration;
 
-  /// Changes which page is displayed in the controlled [CarouselSlider].
-  ///
-  /// Jumps the page position from its current value to the given value,
-  /// without animation, and without checking if the new value is in range.
-  void jumpToPage(int page) {
-    final index = _getRealIndex(pageController.page.toInt(), realPage, items.length);
-    return pageController.jumpToPage(pageController.page.toInt() + page - index);
-  }
+  final void Function(int) onImageTap;
 
-  /// Animates the controlled [CarouselSlider] from the current page to the given page.
-  ///
-  /// The animation lasts for the given duration and follows the given curve.
-  /// The returned [Future] resolves when the animation completes.
-  Future<void> animateToPage(int page, {Duration duration, Curve curve}) {
-    final index = _getRealIndex(pageController.page.toInt(), realPage, items.length);
-    return pageController.animateToPage(pageController.page.toInt() + page - index,
-        duration: duration, curve: curve);
-  }
+  final void Function(int, int) onImageChange;
+
+  Carousel(
+      {this.images,
+      this.animationCurve = Curves.ease,
+      this.animationDuration = const Duration(milliseconds: 300),
+      this.dotSize = 8.0,
+      this.dotSpacing = 25.0,
+      this.dotIncreaseSize = 2.0,
+      this.dotColor = Colors.white,
+      this.dotBgColor,
+      this.showIndicator = true,
+      this.indicatorBgPadding = 20.0,
+      this.boxFit = BoxFit.cover,
+      this.borderRadius = false,
+      this.radius,
+      this.moveIndicatorFromBottom = 0.0,
+      this.noRadiusForIndicator = false,
+      this.overlayShadow = false,
+      this.overlayShadowColors,
+      this.overlayShadowSize = 0.5,
+      this.autoplay = true,
+      this.autoplayDuration = const Duration(seconds: 3),
+      this.onImageTap,
+      this.onImageChange})
+      : assert(images != null),
+        assert(animationCurve != null),
+        assert(animationDuration != null),
+        assert(dotSize != null),
+        assert(dotSpacing != null),
+        assert(dotIncreaseSize != null),
+        assert(dotColor != null);
 
   @override
-  _CarouselSliderState createState() => _CarouselSliderState();
+  State createState() => new _CarouselState();
 }
 
-class _CarouselSliderState extends State<CarouselSlider> with TickerProviderStateMixin {
+class _CarouselState extends State<Carousel> {
   Timer timer;
+  int _currentImageIndex = 0;
+  PageController _controller = new PageController();
 
   @override
   void initState() {
     super.initState();
-    timer = getTimer();
-  }
 
-  Timer getTimer() {
-    return Timer.periodic(widget.autoPlayInterval, (_) {
-      if (widget.autoPlay) {
-        widget.pageController
-            .nextPage(duration: widget.autoPlayAnimationDuration, curve: widget.autoPlayCurve);
-      }
-    });
-  }
-
-  void pauseOnTouch() {
-    timer.cancel();
-    timer = Timer(widget.pauseAutoPlayOnTouch, () {
-      timer = getTimer();
-    });
-  }
-
-  Widget getWrapper(Widget child) {
-    if (widget.height != null) {
-      final Widget wrapper = Container(height: widget.height, child: child);
-      return widget.autoPlay && widget.pauseAutoPlayOnTouch != null
-          ? addGestureDetection(wrapper)
-          : wrapper;
-    } else {
-      final Widget wrapper = AspectRatio(aspectRatio: widget.aspectRatio, child: child);
-      return widget.autoPlay && widget.pauseAutoPlayOnTouch != null
-          ? addGestureDetection(wrapper)
-          : wrapper;
+    if (widget.autoplay) {
+      timer = new Timer.periodic(widget.autoplayDuration, (_) {
+        if (_controller.page == widget.images.length - 1) {
+          _controller.animateToPage(
+            0,
+            duration: widget.animationDuration,
+            curve: widget.animationCurve,
+          );
+        } else {
+          _controller.nextPage(duration: widget.animationDuration, curve: widget.animationCurve);
+        }
+      });
     }
   }
 
-  Widget addGestureDetection(Widget child) =>
-      GestureDetector(onPanDown: (_) => pauseOnTouch(), child: child);
-
   @override
   void dispose() {
-    super.dispose();
+    _controller.dispose();
+    _controller = null;
     timer?.cancel();
+    timer = null;
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return getWrapper(PageView.builder(
-      scrollDirection: widget.scrollDirection,
-      controller: widget.pageController,
-      reverse: widget.reverse,
-      itemCount: widget.enableInfiniteScroll ? null : widget.items.length,
-      onPageChanged: (int index) {
-        int currentPage = _getRealIndex(index, widget.realPage, widget.items.length);
-        if (widget.onPageChanged != null) {
-          widget.onPageChanged(currentPage);
-        }
-      },
-      itemBuilder: (BuildContext context, int i) {
-        final int index =
-            _getRealIndex(i + widget.initialPage, widget.realPage, widget.items.length);
+    final List<Widget> listImages = widget.images
+        .map<Widget>(
+          (netImage) => netImage is ImageProvider
+              ? new Container(
+                  decoration: new BoxDecoration(
+                    borderRadius: widget.borderRadius ? new BorderRadius.all(widget.radius != null ? widget.radius : new Radius.circular(8.0)) : null,
+                    image: new DecorationImage(
+                      image: netImage,
+                      fit: widget.boxFit,
+                    ),
+                  ),
+                  child: widget.overlayShadow
+                      ? new Container(
+                          decoration: new BoxDecoration(
+                            gradient: new LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.center,
+                              stops: [0.0, widget.overlayShadowSize],
+                              colors: [widget.overlayShadowColors != null ? widget.overlayShadowColors.withOpacity(1.0) : Colors.grey[800].withOpacity(1.0), widget.overlayShadowColors != null ? widget.overlayShadowColors.withOpacity(0.0) : Colors.grey[800].withOpacity(0.0)],
+                            ),
+                          ),
+                        )
+                      : new Container(),
+                )
+              : netImage,
+        )
+        .toList();
 
-        return AnimatedBuilder(
-          animation: widget.pageController,
-          child: widget.items[index],
-          builder: (BuildContext context, child) {
-            // on the first render, the pageController.page is null,
-            // this is a dirty hack
-            if (widget.pageController.position.minScrollExtent == null ||
-                widget.pageController.position.maxScrollExtent == null) {
-              Future.delayed(Duration(microseconds: 1), () {
-                setState(() {});
-              });
-              return Container();
-            }
-            double value = widget.pageController.page - i;
-            value = (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
+    return new Stack(
+      children: <Widget>[
+        new Container(
+          child: new Builder(
+            builder: (_) {
+              Widget pageView = new PageView(
+                physics: new AlwaysScrollableScrollPhysics(),
+                controller: _controller,
+                children: listImages,
+                onPageChanged: (currentPage) {
+                  if (widget.onImageChange != null) {
+                    widget.onImageChange(_currentImageIndex, currentPage);
+                  }
 
-            final double height =
-                widget.height ?? MediaQuery.of(context).size.width * (1 / widget.aspectRatio);
-            final double distortionValue =
-                widget.enlargeCenterPage ? Curves.easeOut.transform(value) : 1.0;
+                  _currentImageIndex = currentPage;
+                },
+              );
 
-            if (widget.scrollDirection == Axis.horizontal) {
-              return Center(child: SizedBox(height: distortionValue * height, child: child));
-            } else {
-              return Center(
-                  child: SizedBox(
-                      width: distortionValue * MediaQuery.of(context).size.width, child: child));
-            }
-          },
-        );
-      },
-    ));
+              if (widget.onImageTap == null) {
+                return pageView;
+              }
+
+              return new GestureDetector(
+                child: pageView,
+                onTap: () => widget.onImageTap(_currentImageIndex),
+              );
+            },
+          ),
+        ),
+        widget.showIndicator
+            ? new Positioned(
+                bottom: widget.moveIndicatorFromBottom,
+                left: 0.0,
+                right: 0.0,
+                child: new Container(
+                  decoration: new BoxDecoration(
+                    color: widget.dotBgColor == null ? Colors.grey[800].withOpacity(0.5) : widget.dotBgColor,
+                    borderRadius: widget.borderRadius ? (widget.noRadiusForIndicator ? null : new BorderRadius.only(bottomLeft: widget.radius != null ? widget.radius : new Radius.circular(8.0), bottomRight: widget.radius != null ? widget.radius : new Radius.circular(8.0))) : null,
+                  ),
+                  padding: new EdgeInsets.all(widget.indicatorBgPadding),
+                  child: new Center(
+                    child: new _DotsIndicator(
+                      controller: _controller,
+                      itemCount: listImages.length,
+                      color: widget.dotColor,
+                      dotSize: widget.dotSize,
+                      dotSpacing: widget.dotSpacing,
+                      dotIncreaseSize: widget.dotIncreaseSize,
+                      onPageSelected: (int page) {
+                        _controller.animateToPage(
+                          page,
+                          duration: widget.animationDuration,
+                          curve: widget.animationCurve,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              )
+            : new Container(),
+      ],
+    );
   }
 }
 
-/// Converts an index of a set size to the corresponding index of a collection of another size
-/// as if they were circular.
-///
-/// Takes a [position] from collection Foo, a [base] from where Foo's index originated
-/// and the [length] of a second collection Baa, for which the correlating index is sought.
-///
-/// For example; We have a Carousel of 10000(simulating infinity) but only 6 images.
-/// We need to repeat the images to give the illusion of a never ending stream.
-/// By calling _getRealIndex with position and base we get an offset.
-/// This offset modulo our length, 6, will return a number between 0 and 5, which represent the image
-/// to be placed in the given position.
-int _getRealIndex(int position, int base, int length) {
-  final int offset = position - base;
-  return _remainder(offset, length);
-}
+class _DotsIndicator extends AnimatedWidget {
+  _DotsIndicator({this.controller, this.itemCount, this.onPageSelected, this.color, this.dotSize, this.dotIncreaseSize, this.dotSpacing}) : super(listenable: controller);
 
-/// Returns the remainder of the modulo operation [input] % [source], and adjust it for
-/// negative values.
-int _remainder(int input, int source) {
-  final int result = input % source;
-  return result < 0 ? source + result : result;
+  final PageController controller;
+
+  final int itemCount;
+
+  final ValueChanged<int> onPageSelected;
+
+  final Color color;
+
+  final double dotSize;
+
+  final double dotIncreaseSize;
+
+  final double dotSpacing;
+
+  Widget _buildDot(int index) {
+    double selectedness = Curves.easeOut.transform(
+      max(
+        0.0,
+        1.0 - ((controller.page ?? controller.initialPage) - index).abs(),
+      ),
+    );
+    double zoom = 1.0 + (dotIncreaseSize - 1.0) * selectedness;
+    return new Container(
+      width: dotSpacing,
+      child: new Center(
+        child: new Material(
+          color: color,
+          type: MaterialType.circle,
+          child: new Container(
+            width: dotSize * zoom,
+            height: dotSize * zoom,
+            child: new InkWell(
+              onTap: () => onPageSelected(index),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget build(BuildContext context) {
+    return new Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: new List<Widget>.generate(itemCount, _buildDot),
+    );
+  }
 }
