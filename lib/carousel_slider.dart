@@ -36,7 +36,7 @@ class Carousel extends StatefulWidget {
 
   final bool overlayShadow;
 
-  final Color overlayShadowColors;
+  final List<Color> overlayShadowColors;
 
   final double overlayShadowSize;
 
@@ -136,7 +136,12 @@ class _CarouselState extends State<Carousel> {
                               begin: Alignment.bottomCenter,
                               end: Alignment.center,
                               stops: [0.0, widget.overlayShadowSize],
-                              colors: [widget.overlayShadowColors != null ? widget.overlayShadowColors.withOpacity(1.0) : Colors.grey[800].withOpacity(1.0), widget.overlayShadowColors != null ? widget.overlayShadowColors.withOpacity(0.0) : Colors.grey[800].withOpacity(0.0)],
+                              colors: widget.overlayShadowColors != null
+                                  ? widget.overlayShadowColors
+                                  : [
+                                      Colors.black.withOpacity(0.5),
+                                      Colors.black.withOpacity(0.1),
+                                    ],
                             ),
                           ),
                         )
@@ -183,7 +188,9 @@ class _CarouselState extends State<Carousel> {
                 child: new Container(
                   decoration: new BoxDecoration(
                     color: widget.dotBgColor == null ? Colors.grey[800].withOpacity(0.5) : widget.dotBgColor,
-                    borderRadius: widget.borderRadius ? (widget.noRadiusForIndicator ? null : new BorderRadius.only(bottomLeft: widget.radius != null ? widget.radius : new Radius.circular(8.0), bottomRight: widget.radius != null ? widget.radius : new Radius.circular(8.0))) : null,
+                    borderRadius: widget.borderRadius
+                        ? (widget.noRadiusForIndicator ? null : new BorderRadius.only(bottomLeft: widget.radius != null ? widget.radius : new Radius.circular(8.0), bottomRight: widget.radius != null ? widget.radius : new Radius.circular(8.0)))
+                        : null,
                   ),
                   padding: new EdgeInsets.all(widget.indicatorBgPadding),
                   child: new Center(
